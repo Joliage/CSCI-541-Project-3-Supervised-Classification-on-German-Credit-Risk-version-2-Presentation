@@ -597,12 +597,32 @@ code.inline {
   .section-slide h1 { font-size: 66px; }
   .closing-slide h1 { font-size: 92px; }
 }
+
+/* ============== INTERACTIVE RUNNABLE CELLS (Pyodide) ============== */
+.run-cell{background:#1c1726;border-radius:6px;overflow:hidden;margin:14px 0;box-shadow:0 4px 18px rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.07);}
+.run-cell .run-bar{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:rgba(0,0,0,.30);border-bottom:1px solid rgba(255,255,255,.08);font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:#d9d2e6;}
+.run-cell .run-bar .run-file{display:flex;align-items:center;gap:8px;}
+.run-cell .run-bar .run-file .dot-group{display:flex;gap:6px;}
+.run-cell .run-bar .run-file .dot{width:10px;height:10px;border-radius:50%;}
+.run-cell .run-bar .run-file .dot:nth-child(1){background:#3FE0B8;}
+.run-cell .run-bar .run-file .dot:nth-child(2){background:#E0B33F;}
+.run-cell .run-bar .run-file .dot:nth-child(3){background:#E0563F;}
+.run-btn{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.1em;background:#2EBE9A;color:#08120e;border:none;border-radius:4px;padding:6px 16px;cursor:pointer;transition:background .15s,opacity .15s;text-transform:uppercase;}
+.run-btn:hover{background:#3FE0B8;}
+.run-btn:disabled{opacity:.45;cursor:progress;}
+.run-code{width:100%;box-sizing:border-box;background:#1c1726;color:#ECE7F3;border:none;outline:none;resize:vertical;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.55;padding:14px 18px;tab-size:4;caret-color:#3FE0B8;display:block;}
+.run-code:focus{background:#221c30;}
+.run-out{border-top:1px solid rgba(255,255,255,.08);background:#14101c;padding:12px 16px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.5;color:#B9F0E0;max-height:300px;overflow:auto;white-space:pre-wrap;}
+.run-out.run-error{color:#FF9B8A;}
+.run-out .run-status{color:#9a8fb0;font-style:italic;}
+.run-hint{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#74708a;margin-top:8px;letter-spacing:.04em;}
+.run-hint b{color:#1a8f72;font-weight:600;}
 </style>
 </head>
 <body>
 
 <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
-<div class="slide-number" id="slideNumber">01 / 48</div>
+<div class="slide-number" id="slideNumber">01 / 49</div>
 <div class="kbd-hint">USE <span class="kbd">←</span> <span class="kbd">→</span> TO NAVIGATE</div>
 
 <div class="deck" id="deck">
@@ -1707,6 +1727,47 @@ SLIDE 35 — BEFORE / AFTER COMPARISON
 </section>
 
 <!-- =========================================================
+SLIDE 35b — LIVE RUNNABLE MLP
+========================================================= -->
+<section class="slide">
+  <span class="section-tag">Live Demo &middot; Run it yourself</span>
+  <h2 class="slide-title">Train a neural network — live in the browser</h2>
+  <p style="margin-bottom:8px;">TensorFlow can't run in a browser, so this uses scikit-learn's <code class="inline">MLPClassifier</code> — the same multi-layer-perceptron idea (Dense layers + ReLU) as the Keras model. Watch a wider network beat a narrow one. First run loads the runtime (~20–40s).</p>
+  <div class="run-cell" data-lang="python">
+    <div class="run-bar">
+      <div class="run-file">
+        <div class="dot-group"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        <span>live &middot; sklearn MLPClassifier (Keras stand-in)</span>
+      </div>
+      <button class="run-btn">&#9658; Run</button>
+    </div>
+    <textarea class="run-code" spellcheck="false">import numpy as np
+from sklearn.neural_network import MLPClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+# Synthetic German-Credit-style data (1000 rows, 70/30 good/bad)
+rng = np.random.default_rng(42)
+n = 1000
+y = (rng.random(n) < 0.70).astype(int)
+X = (y * 1.0 + rng.normal(0, 1, (20, n))).T + rng.normal(0, 0.6, (n, 20))
+X = StandardScaler().fit_transform(X)
+X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.15, random_state=42)
+
+# Narrow network (like the untuned baseline) vs wider (like the tuned model)
+for label, hidden in [("narrow  (64, 32)", (64, 32)),
+                      ("wide   (128, 64)", (128, 64))]:
+    clf = MLPClassifier(hidden_layer_sizes=hidden, activation="relu",
+                        alpha=1e-3, max_iter=300, random_state=42)
+    clf.fit(X_tr, y_tr)
+    acc = clf.score(X_te, y_te)
+    print(f"MLP {label}:  test accuracy = {acc:.3f}")</textarea>
+    <div class="run-out" hidden></div>
+  </div>
+  <p class="run-hint">The wider architecture mirrors what Keras Tuner found (128&rarr;64). Try other <b>hidden_layer_sizes</b> and Run again.</p>
+</section>
+
+<!-- =========================================================
 SLIDE 36 — COMPARISON ACROSS ALL MODELS
 ========================================================= -->
 <section class="slide">
@@ -2016,6 +2077,50 @@ SLIDE 48 — CLOSING
   <button class="nav-btn" id="nextBtn" title="Next slide">›</button>
 </div>
 
+<!-- ============ LIVE PYTHON RUNTIME (Pyodide + numpy/pandas/scikit-learn) ============ -->
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<script>
+(function(){
+  let pyReady=null;
+  async function getPy(){
+    if(pyReady) return pyReady;
+    pyReady=(async()=>{
+      const py=await loadPyodide();
+      await py.loadPackage(["numpy","pandas","scikit-learn"]);
+      return py;
+    })();
+    return pyReady;
+  }
+  async function runCell(cell){
+    const code=cell.querySelector('.run-code').value;
+    const out=cell.querySelector('.run-out');
+    const btn=cell.querySelector('.run-btn');
+    out.hidden=false; out.classList.remove('run-error');
+    out.innerHTML='<span class="run-status">Loading Python + scikit-learn\u2026 the first run downloads the runtime (~20\u201340s); after that it is instant.</span>';
+    btn.disabled=true;
+    try{
+      const py=await getPy();
+      let cap="";
+      py.setStdout({batched:s=>{cap+=s;}});
+      py.setStderr({batched:s=>{cap+=s;}});
+      await py.runPythonAsync(code);
+      out.textContent = cap.trim() || "\u2713 Ran successfully (no printed output).";
+    }catch(e){
+      out.classList.add('run-error');
+      out.textContent="\u2717 "+(e.message||e);
+    }finally{ btn.disabled=false; }
+  }
+  function autosize(ta){ta.style.height='auto';ta.style.height=Math.min(ta.scrollHeight+2,470)+'px';}
+  document.addEventListener('DOMContentLoaded',()=>{
+    document.querySelectorAll('.run-cell').forEach(cell=>{
+      const ta=cell.querySelector('.run-code');
+      autosize(ta); ta.addEventListener('input',()=>autosize(ta));
+      ta.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();runCell(cell);}});
+      cell.querySelector('.run-btn').addEventListener('click',()=>runCell(cell));
+    });
+  });
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
 
